@@ -82,7 +82,7 @@
     background: #2a1414; border: 1px solid var(--danger); color: #ffb3b0;
     padding: 12px 16px; border-radius: 8px; margin: 16px 0; font-size: 0.88rem;
   }
-  .footer-note { margin-top: 40px; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+  .footer-note { margin: 4px 0 14px; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
   @media (prefers-color-scheme: light) {
     :root {
       --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f0f1f4; --border: #e2e5ea;
@@ -108,6 +108,7 @@
 
   <div class="leaderboard">
     <h2>Leaderboard</h2>
+    <div class="footer-note" id="footerNote"></div>
     <table>
       <thead>
         <tr><th class="rank-cell">#</th><th>Player</th><th>Score</th><th>Exact picks</th></tr>
@@ -118,8 +119,6 @@
 
   <h2>Picks &amp; live scoring</h2>
   <div class="cards" id="cards"></div>
-
-  <div class="footer-note" id="footerNote"></div>
 </div>
 
 <script>
@@ -289,8 +288,7 @@ function render(predictions, positions, matchesPlayed) {
   }).join("");
 
   document.getElementById("footerNote").innerHTML =
-    `Scoring: 10 pts exact position &middot; 7 pts one off &middot; 5 pts two off &middot; 1 pt three-or-more off (still top 6) &middot; 0 if outside the top 6.<br>` +
-    `Standings computed from ${matchesPlayed} played match${matchesPlayed === 1 ? "" : "es"} (points, then goal difference, then goals scored — head-to-head not applied).`;
+    `Scoring: 10 pts exact position &middot; 7 pts one off &middot; 5 pts two off &middot; 1 pt three-or-more off (still top 6) &middot; 0 if outside the top 6.`;
 }
 
 function ordinal(n) {
