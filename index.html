@@ -136,6 +136,12 @@ const DATA_SOURCES = [
   "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/en.1.json",
   "https://cdn.jsdelivr.net/gh/openfootball/football.json@master/2026-27/en.1.json"
 ];
+// Pre-computed, officially-ranked standings — used as the primary source for
+// "where does each team currently sit" (live scoring + the position labels
+// on each card). ESPN resolves tied-on-points ordering (goal difference,
+// then goals scored) the same way the real Premier League table does, so we
+// don't have to re-derive it ourselves from raw results. No API key needed.
+const ESPN_STANDINGS_URL = "https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings";
 const PREDICTIONS_URL = "./predictions.json";
 const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes, while the tab stays open
 
@@ -161,6 +167,30 @@ function toShortName(fullName) {
     if (lower.includes(key)) return short;
   }
   return fullName; // team not in our prediction pool — keep full name, it just won't match any pick
+}
+
+// Parses ESPN's standings JSON into a shortName -> current league position
+// Map. Throws if the shape isn't what we expect (missing league/entries),
+// so the caller can fall back to the openfootball-derived table instead of
+// silently rendering an empty or wrong leaderboard.
+function parseEspnPositions(json) {
+  const entries = json?.children?.[0]?.standings?.entries || [];
+  if (entries.length === 0) throw new Error("ESPN standings: no entries in response");
+  const positions = new Map();
+  for (const entry of entries) {
+    const teamName = entry.team?.displayName || entry.team?.name || "";
+    const rankStat = (entry.stats || []).find(s => s.name === "rank");
+    if (!rankStat || rankStat.value == null) continue;
+    const short = toShortName(teamName);
+    if (!positions.has(short)) positions.set(short, rankStat.value);
+  }
+  if (positions.size === 0) throw new Error("ESPN standings: couldn't read any team ranks");
+  return positions;
+}
+
+async function fetchEspnPositions() {
+  const json = await fetchJson(ESPN_STANDINGS_URL);
+  return parseEspnPositions(json);
 }
 
 /* ---------- Scoring ---------- */
@@ -420,16 +450,34 @@ async function loadAll() {
   refreshBtn.disabled = true;
   statusEl.textContent = "Refreshing…";
   try {
-    const [predictions, { data, source }] = await Promise.all([
-      fetchJson(PREDICTIONS_URL),
-      fetchLiveData()
+    const [[predictions, { data, source }], espnResult] = await Promise.all([
+      Promise.all([fetchJson(PREDICTIONS_URL), fetchLiveData()]),
+      fetchEspnPositions().then(
+        positions => ({ ok: true, positions }),
+        err => ({ ok: false, err })
+      )
     ]);
     const matches = data.matches || data.rounds?.flatMap(r => r.matches) || [];
-    const { positions } = computeStandings(matches);
+
+    // The match-week-by-match-week history (needed for the Bonus column)
+    // only comes from openfootball's raw results, since ESPN's standings
+    // endpoint only exposes the current table, not a per-matchday breakdown.
+    const { positions: openfootballPositions } = computeStandings(matches);
     const { positions: lockedPositions } = computeLockedStandings(matches);
     const roundPositionsMap = standingsByCompletedRound(matches);
+
+    // Live positions: prefer ESPN's pre-ranked table (see ESPN_STANDINGS_URL
+    // comment above); fall back to our own openfootball-derived ranking if
+    // ESPN is unreachable or its response shape changes.
+    let positions = openfootballPositions;
+    let positionsSource = source.includes("jsdelivr") ? "jsdelivr mirror" : "GitHub (openfootball)";
+    if (espnResult.ok) {
+      positions = espnResult.positions;
+      positionsSource = "ESPN";
+    }
+
     render(predictions, positions, lockedPositions, roundPositionsMap);
-    statusEl.textContent = `Live · updated ${fmtTime(new Date())} · source: ${source.includes("jsdelivr") ? "jsdelivr mirror" : "GitHub (openfootball)"}`;
+    statusEl.textContent = `Live · updated ${fmtTime(new Date())} · source: ${positionsSource}`;
   } catch (err) {
     document.getElementById("errorBox").innerHTML =
       `<div class="error-box">Couldn't load live standings (${err.message}). Showing last known data if available. This usually means the season's data file isn't published yet or the source is briefly unreachable — try "Refresh now" again shortly.</div>`;
