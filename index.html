@@ -33,7 +33,7 @@
   .sub { color: var(--muted); font-size: 0.92rem; }
   .status-row {
     display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-    margin-top: 14px; font-size: 0.85rem; color: var(--muted);
+    margin-top: 40px; font-size: 0.85rem; color: var(--muted);
   }
   button {
     background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
@@ -94,12 +94,8 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Top 6 Predictions</h1>
+    <h1>THE MALTOIDS' TOP 6 PREDICTIONS</h1>
     <div class="sub">Premier League 2026/27 &middot; 9 players, €20 each, €180 pot &middot; live standings, auto-scored</div>
-    <div class="status-row">
-      <span id="status">Loading live table&hellip;</span>
-      <button id="refreshBtn">Refresh now</button>
-    </div>
   </header>
 
   <div id="errorBox"></div>
@@ -119,6 +115,11 @@
 
   <h2>Picks &amp; live scoring</h2>
   <div class="cards" id="cards"></div>
+
+  <div class="status-row">
+    <span id="status">Loading live table&hellip;</span>
+    <button id="refreshBtn">Refresh now</button>
+  </div>
 </div>
 
 <script>
