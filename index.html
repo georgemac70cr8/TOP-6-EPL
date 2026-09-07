@@ -47,7 +47,7 @@
   }
   .pot b { color: var(--text); }
   table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 10px; overflow: hidden; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
   th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: var(--panel-2); }
@@ -55,12 +55,10 @@
   .rank-1 { color: var(--gold); font-weight: 700; }
   .rank-2 { color: var(--silver); font-weight: 700; }
   .score-cell { font-weight: 700; font-variant-numeric: tabular-nums; }
-  .bonus-tag {
-    display: inline-block; font-size: 0.68rem; font-weight: 700; color: var(--bg);
-    background: var(--accent); border-radius: 4px; padding: 1px 5px; vertical-align: middle;
-  }
   .six-six-cell { font-variant-numeric: tabular-nums; color: var(--muted); }
   .six-six-cell.six-six-hit { color: var(--accent); font-weight: 700; }
+  .bonus-cell { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .bonus-cell.bonus-cell-hit { color: var(--accent); font-weight: 700; }
   .leaderboard { margin-bottom: 36px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .card {
@@ -113,7 +111,7 @@
     <div class="footer-note" id="footerNote"></div>
     <table>
       <thead>
-        <tr><th class="rank-cell">#</th><th>Player</th><th>Score</th><th>Exact picks</th><th>6/6</th></tr>
+        <tr><th class="rank-cell">#</th><th>Player</th><th>Score</th><th>Exact picks</th><th>6/6</th><th>Bonus</th></tr>
       </thead>
       <tbody id="leaderboardBody"></tbody>
     </table>
@@ -262,6 +260,42 @@ function computeLockedStandings(matches) {
   const { positions } = computeStandings(lockedMatches);
   return { positions, upToRound: upTo };
 }
+
+// Standings as they stood at the end of EVERY fully-completed match week so
+// far this season, keyed by round number. Feeds the cumulative BONUS column:
+// a player's picks might have all been in the top 6 after matchday 3, fallen
+// out of it by matchday 5, then locked in again by matchday 9 — each of
+// those completed weeks needs checking independently.
+function standingsByCompletedRound(matches) {
+  const upTo = lastCompletedRound(matches);
+  const byRound = new Map(); // round number -> positions Map as of that round
+  if (upTo == null) return byRound;
+  for (let r = 1; r <= upTo; r++) {
+    const roundMatches = matches.filter(m => {
+      const rn = roundNumber(m.round);
+      return rn != null && rn <= r;
+    });
+    byRound.set(r, computeStandings(roundMatches).positions);
+  }
+  return byRound;
+}
+
+// A player earns +10 for every fully-completed match week where all 6 of
+// their picks sat in the actual top 6 at the time. Cumulative over the
+// season — this can go up multiple times, it doesn't cap at one hit.
+function cumulativeBonus(picks, roundPositionsMap) {
+  let bonus = 0;
+  for (const positions of roundPositionsMap.values()) {
+    const allInTop6 = picks.every(team => {
+      const pos = positions.get(team);
+      return pos != null && pos >= 1 && pos <= 6;
+    });
+    if (allInTop6) bonus += 10;
+  }
+  return bonus;
+}
+
+/* ---------- Fetching ---------- */
 async function fetchJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
@@ -286,7 +320,7 @@ function fmtTime(d) {
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-function render(predictions, positions, lockedPositions) {
+function render(predictions, positions, lockedPositions, roundPositionsMap) {
   const errorBox = document.getElementById("errorBox");
   errorBox.innerHTML = "";
 
@@ -306,17 +340,18 @@ function render(predictions, positions, lockedPositions) {
     });
     const basePts = breakdown.reduce((s, b) => s + b.pts, 0);
 
-    // Bonus: all 6 picks sitting in the top 6 — only decided once the
-    // current gameweek is fully played out, using the locked table.
+    // 6/6 status for the most recently completed match week (informational —
+    // shows whether this week is currently on track for a bonus hit).
     let sixSixCount = null;
-    let bonus = 0;
-    if (lockedPositions) {
+    if (lockedPositions && lockedPositions.size > 0) {
       sixSixCount = picks.filter(team => {
         const pos = lockedPositions.get(team);
         return pos != null && pos >= 1 && pos <= 6;
       }).length;
-      if (sixSixCount === 6) bonus = 10;
     }
+
+    // Cumulative bonus: +10 for every completed match week that was a 6/6.
+    const bonus = cumulativeBonus(picks, roundPositionsMap);
 
     const total = basePts + bonus;
     const exact = breakdown.filter(b => b.pts === 10).length;
@@ -330,13 +365,14 @@ function render(predictions, positions, lockedPositions) {
   lbBody.innerHTML = results.map((r, i) => {
     const rankClass = i === 0 ? "rank-1" : i === 1 ? "rank-2" : "";
     const sixSixLabel = r.sixSixCount == null ? "–" : `${r.sixSixCount}/6`;
-    const sixSixClass = r.bonus ? " six-six-hit" : "";
+    const sixSixClass = r.sixSixCount === 6 ? " six-six-hit" : "";
     return `<tr>
       <td class="rank-cell ${rankClass}">${i + 1}</td>
       <td class="${rankClass}">${r.name}</td>
-      <td class="score-cell">${r.total}${r.bonus ? ` <span class="bonus-tag">+10</span>` : ""}</td>
+      <td class="score-cell">${r.total}</td>
       <td>${r.exact}</td>
       <td class="six-six-cell${sixSixClass}">${sixSixLabel}</td>
+      <td class="bonus-cell${r.bonus ? " bonus-cell-hit" : ""}">${r.bonus}</td>
     </tr>`;
   }).join("");
 
@@ -354,14 +390,14 @@ function render(predictions, positions, lockedPositions) {
       </div>`;
     }).join("");
     return `<div class="card">
-      <div class="card-head"><span class="name">${r.name}</span><span class="total">${r.total} pts${r.bonus ? " (incl. +10 bonus)" : ""}</span></div>
+      <div class="card-head"><span class="name">${r.name}</span><span class="total">${r.total} pts${r.bonus ? ` (incl. ${r.bonus} bonus)` : ""}</span></div>
       ${rows}
     </div>`;
   }).join("");
 
   document.getElementById("footerNote").innerHTML =
     `Scoring: exact position 10 pts &middot; one away 7 pts &middot; two away 5 pts &middot; three-or-more away (still top 6) 1 pt &middot; 0 if outside the top 6.<br>` +
-    `+10 bonus if all 6 picks are in the top 6 &mdash; only locked in once the current gameweek finishes (see the 6/6 column).`;
+    `+10 bonus for every match week where all 6 picks are in the top 6 &mdash; cumulative over the season, only locked in once each match week finishes (see the 6/6 and Bonus columns).`;
 }
 
 function ordinal(n) {
@@ -388,7 +424,8 @@ async function loadAll() {
     const matches = data.matches || data.rounds?.flatMap(r => r.matches) || [];
     const { positions } = computeStandings(matches);
     const { positions: lockedPositions } = computeLockedStandings(matches);
-    render(predictions, positions, lockedPositions);
+    const roundPositionsMap = standingsByCompletedRound(matches);
+    render(predictions, positions, lockedPositions, roundPositionsMap);
     statusEl.textContent = `Live · updated ${fmtTime(new Date())} · source: ${source.includes("jsdelivr") ? "jsdelivr mirror" : "GitHub (openfootball)"}`;
   } catch (err) {
     document.getElementById("errorBox").innerHTML =
