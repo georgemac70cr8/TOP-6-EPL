@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Top 6 Predictions</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1e222c;
+    --border: #2a2f3a;
+    --text: #e8eaed;
+    --muted: #9aa3b2;
+    --accent: #6ee7a0;
+    --accent-2: #f6c453;
+    --danger: #ef6461;
+    --gold: #f6c453;
+    --silver: #c9d1d9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  header { margin-bottom: 24px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.92rem; }
+  .status-row {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    margin-top: 14px; font-size: 0.85rem; color: var(--muted);
+  }
+  button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+  }
+  button:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .pot {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; margin: 18px 0; font-size: 0.9rem; color: var(--muted);
+  }
+  .pot b { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--panel-2); }
+  .rank-cell { width: 40px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .rank-1 { color: var(--gold); font-weight: 700; }
+  .rank-2 { color: var(--silver); font-weight: 700; }
+  .score-cell { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .leaderboard { margin-bottom: 36px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .card-head .name { font-weight: 700; font-size: 1.02rem; }
+  .card-head .total { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85rem; }
+  .pick-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; font-size: 0.88rem; border-bottom: 1px dashed var(--border);
+  }
+  .pick-row:last-child { border-bottom: none; }
+  .pick-left { display: flex; gap: 8px; align-items: baseline; }
+  .pick-rank { color: var(--muted); width: 16px; display: inline-block; }
+  .pick-pts { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 26px; text-align: right; }
+  .pts-10 { color: var(--accent); }
+  .pts-7  { color: #a3d977; }
+  .pts-5  { color: var(--accent-2); }
+  .pts-1  { color: var(--muted); }
+  .pts-0  { color: var(--danger); }
+  .pos-tag { color: var(--muted); font-size: 0.78rem; }
+  h2 { font-size: 1.05rem; margin: 30px 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .error-box {
+    background: #2a1414; border: 1px solid var(--danger); color: #ffb3b0;
+    padding: 12px 16px; border-radius: 8px; margin: 16px 0; font-size: 0.88rem;
+  }
+  .footer-note { margin-top: 40px; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f0f1f4; --border: #e2e5ea;
+      --text: #1a1d24; --muted: #6b7280;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Top 6 Predictions</h1>
+    <div class="sub">Premier League 2026/27 &middot; 9 players, €20 each, €180 pot &middot; live standings, auto-scored</div>
+    <div class="status-row">
+      <span id="status">Loading live table&hellip;</span>
+      <button id="refreshBtn">Refresh now</button>
+    </div>
+  </header>
+
+  <div id="errorBox"></div>
+
+  <div class="pot" id="potBox"></div>
+
+  <div class="leaderboard">
+    <h2>Leaderboard</h2>
+    <table>
+      <thead>
+        <tr><th class="rank-cell">#</th><th>Player</th><th>Score</th><th>Exact picks</th></tr>
+      </thead>
+      <tbody id="leaderboardBody"></tbody>
+    </table>
+  </div>
+
+  <h2>Picks &amp; live scoring</h2>
+  <div class="cards" id="cards"></div>
+
+  <div class="footer-note" id="footerNote"></div>
+</div>
+
+<script>
+/* ---------- Config ---------- */
+const DATA_SOURCES = [
+  "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/en.1.json",
+  "https://cdn.jsdelivr.net/gh/openfootball/football.json@master/2026-27/en.1.json"
+];
+const PREDICTIONS_URL = "./predictions.json";
+const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes, while the tab stays open
+
+// Map an openfootball club name to our short name. Substring-based so it
+// survives "FC" suffixes / minor naming differences between seasons.
+const SHORT_NAME_MAP = [
+  ["arsenal", "Arsenal"],
+  ["chelsea", "Chelsea"],
+  ["liverpool", "Liverpool"],
+  ["everton", "Everton"],
+  ["manchester city", "Man City"],
+  ["man city", "Man City"],
+  ["manchester united", "Man Utd"],
+  ["man utd", "Man Utd"],
+  ["man united", "Man Utd"],
+  ["aston villa", "Villa"],
+  ["tottenham", "Spurs"]
+];
+
+function toShortName(fullName) {
+  const lower = fullName.toLowerCase();
+  for (const [key, short] of SHORT_NAME_MAP) {
+    if (lower.includes(key)) return short;
+  }
+  return fullName; // team not in our prediction pool — keep full name, it just won't match any pick
+}
+
+/* ---------- Scoring ---------- */
+// 10 exact position, 7 one away, 5 two away, 1 three-or-more away
+// (still top 6), 0 if the team isn't in the real top 6 at all.
+function scorePick(predictedRank, actualPos) {
+  if (!actualPos || actualPos < 1 || actualPos > 6) return 0;
+  const diff = Math.abs(actualPos - predictedRank);
+  if (diff === 0) return 10;
+  if (diff === 1) return 7;
+  if (diff === 2) return 5;
+  return 1;
+}
+
+/* ---------- Standings computation ---------- */
+function computeStandings(matches) {
+  const table = new Map(); // shortName-agnostic key: full team name -> stats
+
+  for (const m of matches) {
+    if (!m.score || !m.score.ft) continue; // only played matches
+    const [hg, ag] = m.score.ft;
+    for (const name of [m.team1, m.team2]) {
+      if (!table.has(name)) {
+        table.set(name, { name, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0 });
+      }
+    }
+    const home = table.get(m.team1);
+    const away = table.get(m.team2);
+    home.played++; away.played++;
+    home.gf += hg; home.ga += ag;
+    away.gf += ag; away.ga += hg;
+    if (hg > ag) { home.won++; home.points += 3; away.lost++; }
+    else if (hg < ag) { away.won++; away.points += 3; home.lost++; }
+    else { home.drawn++; away.drawn++; home.points++; away.points++; }
+  }
+
+  const rows = Array.from(table.values());
+  rows.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
+    if (gdB !== gdA) return gdB - gdA;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.name.localeCompare(b.name);
+  });
+
+  const positions = new Map(); // shortName -> position (first match wins)
+  rows.forEach((row, i) => {
+    const short = toShortName(row.name);
+    if (!positions.has(short)) positions.set(short, i + 1);
+  });
+
+  return { rows, positions };
+}
+
+/* ---------- Fetching ---------- */
+async function fetchJson(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchLiveData() {
+  let lastErr;
+  for (const url of DATA_SOURCES) {
+    try {
+      const data = await fetchJson(url);
+      return { data, source: url };
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
+/* ---------- Rendering ---------- */
+function fmtTime(d) {
+  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function render(predictions, positions, matchesPlayed) {
+  const errorBox = document.getElementById("errorBox");
+  errorBox.innerHTML = "";
+
+  const potBox = document.getElementById("potBox");
+  const split = predictions.prizeSplit || { first: 120, second: 60 };
+  potBox.innerHTML =
+    `<b>€${predictions.prizePool}</b> pot (€${predictions.buyIn} x ${Object.keys(predictions.players).length} players) &middot; ` +
+    `1st place: <b>€${split.first}</b> &middot; 2nd place: <b>€${split.second}</b>`;
+
+  // Score every player
+  const results = Object.entries(predictions.players).map(([name, picks]) => {
+    const breakdown = picks.map((team, idx) => {
+      const rank = idx + 1;
+      const actualPos = positions.get(team) || null;
+      const pts = scorePick(rank, actualPos);
+      return { team, rank, actualPos, pts };
+    });
+    const total = breakdown.reduce((s, b) => s + b.pts, 0);
+    const exact = breakdown.filter(b => b.pts === 10).length;
+    return { name, breakdown, total, exact };
+  });
+
+  results.sort((a, b) => b.total - a.total || b.exact - a.exact || a.name.localeCompare(b.name));
+
+  // Leaderboard
+  const lbBody = document.getElementById("leaderboardBody");
+  lbBody.innerHTML = results.map((r, i) => {
+    const rankClass = i === 0 ? "rank-1" : i === 1 ? "rank-2" : "";
+    return `<tr>
+      <td class="rank-cell ${rankClass}">${i + 1}</td>
+      <td class="${rankClass}">${r.name}</td>
+      <td class="score-cell">${r.total}</td>
+      <td>${r.exact}</td>
+    </tr>`;
+  }).join("");
+
+  // Per-player cards
+  const cards = document.getElementById("cards");
+  cards.innerHTML = results.map(r => {
+    const rows = r.breakdown.map(b => {
+      const posLabel = b.actualPos ? `currently ${ordinal(b.actualPos)}` : "outside top 6 / no data";
+      return `<div class="pick-row">
+        <div class="pick-left"><span class="pick-rank">${b.rank}.</span> <span>${b.team}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="pos-tag">${posLabel}</span>
+          <span class="pick-pts pts-${b.pts}">${b.pts}</span>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="card">
+      <div class="card-head"><span class="name">${r.name}</span><span class="total">${r.total} pts</span></div>
+      ${rows}
+    </div>`;
+  }).join("");
+
+  document.getElementById("footerNote").innerHTML =
+    `Scoring: 10 pts exact position &middot; 7 pts one off &middot; 5 pts two off &middot; 1 pt three-or-more off (still top 6) &middot; 0 if outside the top 6.<br>` +
+    `Standings computed from ${matchesPlayed} played match${matchesPlayed === 1 ? "" : "es"} (points, then goal difference, then goals scored — head-to-head not applied).`;
+}
+
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+/* ---------- Boot ---------- */
+const statusEl = document.getElementById("status");
+const refreshBtn = document.getElementById("refreshBtn");
+let refreshing = false;
+
+async function loadAll() {
+  if (refreshing) return;
+  refreshing = true;
+  refreshBtn.disabled = true;
+  statusEl.textContent = "Refreshing…";
+  try {
+    const [predictions, { data, source }] = await Promise.all([
+      fetchJson(PREDICTIONS_URL),
+      fetchLiveData()
+    ]);
+    const matches = data.matches || data.rounds?.flatMap(r => r.matches) || [];
+    const played = matches.filter(m => m.score && m.score.ft).length;
+    const { positions } = computeStandings(matches);
+    render(predictions, positions, played);
+    statusEl.textContent = `Live · updated ${fmtTime(new Date())} · source: ${source.includes("jsdelivr") ? "jsdelivr mirror" : "GitHub (openfootball)"}`;
+  } catch (err) {
+    document.getElementById("errorBox").innerHTML =
+      `<div class="error-box">Couldn't load live standings (${err.message}). Showing last known data if available. This usually means the season's data file isn't published yet or the source is briefly unreachable — try "Refresh now" again shortly.</div>`;
+    statusEl.textContent = "Live data unavailable";
+  } finally {
+    refreshing = false;
+    refreshBtn.disabled = false;
+  }
+}
+
+refreshBtn.addEventListener("click", loadAll);
+loadAll();
+setInterval(loadAll, AUTO_REFRESH_MS);
+</script>
+</body>
+</html>

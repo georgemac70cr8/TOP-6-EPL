@@ -1,0 +1,17 @@
+{
+  "season": "2026-27",
+  "prizePool": 180,
+  "buyIn": 20,
+  "prizeSplit": { "first": 120, "second": 60 },
+  "players": {
+    "DAMO":   ["Arsenal", "Man City", "Chelsea", "Liverpool", "Man Utd", "Spurs"],
+    "DAVE":   ["Arsenal", "Chelsea", "Liverpool", "Man Utd", "Everton", "Man City"],
+    "GEORGE": ["Arsenal", "Man Utd", "Man City", "Chelsea", "Villa", "Spurs"],
+    "MARK":   ["Chelsea", "Arsenal", "Man City", "Villa", "Man Utd", "Liverpool"],
+    "MAU":    ["Arsenal", "Man Utd", "Chelsea", "Man City", "Villa", "Liverpool"],
+    "MURPH":  ["Arsenal", "Chelsea", "Man Utd", "Liverpool", "Spurs", "Man City"],
+    "RYAN":   ["Arsenal", "Man City", "Liverpool", "Man Utd", "Chelsea", "Villa"],
+    "STEVE":  ["Arsenal", "Liverpool", "Man City", "Chelsea", "Man Utd", "Spurs"],
+    "WARREN": ["Arsenal", "Chelsea", "Man Utd", "Man City", "Liverpool", "Villa"]
+  }
+}
