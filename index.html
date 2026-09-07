@@ -288,7 +288,7 @@ function render(predictions, positions, matchesPlayed) {
   }).join("");
 
   document.getElementById("footerNote").innerHTML =
-    `Scoring: 10 pts exact position &middot; 7 pts one off &middot; 5 pts two off &middot; 1 pt three-or-more off (still top 6) &middot; 0 if outside the top 6.`;
+    `Scoring: exact position 10 pts &middot; one away 7 pts &middot; two away 5 pts &middot; three-or-more away (still top 6) 1 pt &middot; 0 if outside the top 6.`;
 }
 
 function ordinal(n) {
