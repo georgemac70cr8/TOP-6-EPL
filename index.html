@@ -135,7 +135,8 @@
     </table>
   </div>
 
-  <h2>Picks &amp; live scoring</h2>
+  <h2>Picks &amp; scoring</h2>
+  <p class="table-note">Scoring: 10 pts exact position &middot; 7 pts one off &middot; 5 pts two off &middot; 1 pt three-or-more off (still top 6) &middot; 0 if outside the top 6.</p>
   <div class="cards" id="cards"></div>
 
   <div class="footer-note" id="footerNote"></div>
@@ -389,7 +390,6 @@ function render(predictions, positions, standingsRows, matchesPlayed) {
   }).join("");
 
   document.getElementById("footerNote").innerHTML =
-    `Scoring: 10 pts exact position &middot; 7 pts one off &middot; 5 pts two off &middot; 1 pt three-or-more off (still top 6) &middot; 0 if outside the top 6.<br>` +
     `Standings computed from ${matchesPlayed} played match${matchesPlayed === 1 ? "" : "es"} (points, then goal difference, then goals scored — head-to-head not applied).`;
 }
 
