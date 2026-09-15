@@ -33,7 +33,7 @@
   .sub { color: var(--muted); font-size: 0.92rem; }
   .status-row {
     display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-    margin-top: 40px; font-size: 0.85rem; color: var(--muted);
+    margin-top: 14px; font-size: 0.85rem; color: var(--muted);
   }
   button {
     background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
@@ -47,8 +47,7 @@
   }
   .pot b { color: var(--text); }
   table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 10px; overflow: hidden; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
-  table th:nth-child(n+3), table td:nth-child(n+3) { text-align: center; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
   th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: var(--panel-2); }
@@ -56,10 +55,6 @@
   .rank-1 { color: var(--gold); font-weight: 700; }
   .rank-2 { color: var(--silver); font-weight: 700; }
   .score-cell { font-weight: 700; font-variant-numeric: tabular-nums; }
-  .six-six-cell { font-variant-numeric: tabular-nums; color: var(--muted); }
-  .six-six-cell.six-six-hit { color: var(--accent); font-weight: 700; }
-  .bonus-cell { font-variant-numeric: tabular-nums; color: var(--muted); }
-  .bonus-cell.bonus-cell-hit { color: var(--accent); font-weight: 700; }
   .leaderboard { margin-bottom: 36px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .card {
@@ -87,8 +82,13 @@
     background: #2a1414; border: 1px solid var(--danger); color: #ffb3b0;
     padding: 12px 16px; border-radius: 8px; margin: 16px 0; font-size: 0.88rem;
   }
-  .footer-note { margin: 4px 0 14px; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
-  #footerNote { margin-top: 16px; }
+  .footer-note { margin-top: 40px; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+  .league-table td, .league-table th { text-align: center; }
+  .league-table td:nth-child(2), .league-table th:nth-child(2) { text-align: left; }
+  .league-table tbody tr.in-pool { background: rgba(110, 231, 160, 0.07); }
+  .league-table tbody tr.in-pool td:nth-child(2) { color: var(--accent); font-weight: 600; }
+  .league-table tbody tr:nth-child(6) td { border-bottom: 2px solid var(--accent-2); }
+  .table-note { color: var(--muted); font-size: 0.78rem; margin: 8px 0 0; }
   @media (prefers-color-scheme: light) {
     :root {
       --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f0f1f4; --border: #e2e5ea;
@@ -100,8 +100,12 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>THE MALTOIDS' TOP 6 PREDICTIONS</h1>
-    <div class="sub">Premier League 2026/27</div>
+    <h1>Top 6 Predictions</h1>
+    <div class="sub">Premier League 2026/27 &middot; 9 players, €20 each, €180 pot &middot; live standings, auto-scored</div>
+    <div class="status-row">
+      <span id="status">Loading live table&hellip;</span>
+      <button id="refreshBtn">Refresh now</button>
+    </div>
   </header>
 
   <div id="errorBox"></div>
@@ -109,44 +113,60 @@
   <div class="pot" id="potBox"></div>
 
   <div class="leaderboard">
+    <h2>Premier League Table</h2>
+    <table class="league-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th>
+        </tr>
+      </thead>
+      <tbody id="leagueTableBody"></tbody>
+    </table>
+    <p class="table-note">Green rows/text = a team someone in the pool predicted. Gold line = top 6 cutoff.</p>
+  </div>
+
+  <div class="leaderboard">
     <h2>Leaderboard</h2>
-    <div class="footer-note" id="footerNote"></div>
     <table>
       <thead>
-        <tr><th class="rank-cell">#</th><th>Player</th><th>Score</th><th>Exact picks</th><th># teams in current top 6</th><th>Bonus</th></tr>
+        <tr><th class="rank-cell">#</th><th>Player</th><th>Score</th><th>Exact picks</th></tr>
       </thead>
       <tbody id="leaderboardBody"></tbody>
     </table>
-    <div class="footer-note"><b>The Leaderboard is to make things more interesting over the season. The actual Leaderboard will only truly matter after the final day of the season. However, the bonus 10 points (when someone's 6 teams are all in the top 6) will stand throughout and will count towards your leaderboard score at the end of the season. These bonus points will be accumulated every time you predict the game week's top 6.</b></div>
-    <div class="footer-note">At the end of the season, in the event of a tie, the order will be determined by those with the highest number of exacts over the course of the season.</div>
   </div>
 
   <h2>Picks &amp; live scoring</h2>
   <div class="cards" id="cards"></div>
 
-  <div class="status-row">
-    <span id="status">Loading live table&hellip;</span>
-    <button id="refreshBtn">Refresh now</button>
-  </div>
+  <div class="footer-note" id="footerNote"></div>
 </div>
 
 <script>
 /* ---------- Config ---------- */
+// Each source returns { rows, positions, matchesPlayed } via its own parser.
+// Tried in order; first one that actually returns data wins.
 const DATA_SOURCES = [
-  "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/en.1.json",
-  "https://cdn.jsdelivr.net/gh/openfootball/football.json@master/2026-27/en.1.json"
+  {
+    label: "ESPN",
+    url: "https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings",
+    parse: parseEspnStandings
+  },
+  {
+    label: "openfootball (GitHub)",
+    url: "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/en.1.json",
+    parse: parseOpenfootballMatches
+  },
+  {
+    label: "openfootball (jsdelivr mirror)",
+    url: "https://cdn.jsdelivr.net/gh/openfootball/football.json@master/2026-27/en.1.json",
+    parse: parseOpenfootballMatches
+  }
 ];
-// Pre-computed, officially-ranked standings — used as the primary source for
-// "where does each team currently sit" (live scoring + the position labels
-// on each card). ESPN resolves tied-on-points ordering (goal difference,
-// then goals scored) the same way the real Premier League table does, so we
-// don't have to re-derive it ourselves from raw results. No API key needed.
-const ESPN_STANDINGS_URL = "https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings";
 const PREDICTIONS_URL = "./predictions.json";
 const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes, while the tab stays open
 
-// Map an openfootball club name to our short name. Substring-based so it
-// survives "FC" suffixes / minor naming differences between seasons.
+// Map a full club name (ESPN's or openfootball's) to our short name.
+// Substring-based so it survives "FC" suffixes / naming differences.
 const SHORT_NAME_MAP = [
   ["arsenal", "Arsenal"],
   ["chelsea", "Chelsea"],
@@ -169,45 +189,50 @@ function toShortName(fullName) {
   return fullName; // team not in our prediction pool — keep full name, it just won't match any pick
 }
 
-// Parses ESPN's standings JSON into a shortName -> current league position
-// Map. Throws if the shape isn't what we expect (missing league/entries),
-// so the caller can fall back to the openfootball-derived table instead of
-// silently rendering an empty or wrong leaderboard.
-function parseEspnPositions(json) {
-  const entries = json?.children?.[0]?.standings?.entries || [];
-  if (entries.length === 0) throw new Error("ESPN standings: no entries in response");
+function buildPositions(rows) {
   const positions = new Map();
-  for (const entry of entries) {
-    const teamName = entry.team?.displayName || entry.team?.name || "";
-    const rankStat = (entry.stats || []).find(s => s.name === "rank");
-    if (!rankStat || rankStat.value == null) continue;
-    const short = toShortName(teamName);
-    if (!positions.has(short)) positions.set(short, rankStat.value);
-  }
-  if (positions.size === 0) throw new Error("ESPN standings: couldn't read any team ranks");
+  rows.forEach((row, i) => {
+    const short = toShortName(row.name);
+    if (!positions.has(short)) positions.set(short, i + 1);
+  });
   return positions;
 }
 
-async function fetchEspnPositions() {
-  const json = await fetchJson(ESPN_STANDINGS_URL);
-  return parseEspnPositions(json);
+/* ---------- Parsers ---------- */
+// ESPN's public (no-key) standings endpoint — already-computed, ranked table.
+function parseEspnStandings(data) {
+  const entries = data && data.children && data.children[0] &&
+    data.children[0].standings && data.children[0].standings.entries;
+  if (!entries || !entries.length) return null;
+
+  const stat = (entry, name) => {
+    const s = entry.stats.find(s => s.name === name);
+    return s ? s.value : 0;
+  };
+
+  const rows = entries
+    .map(e => ({
+      name: e.team.displayName,
+      played: stat(e, "gamesPlayed"),
+      won: stat(e, "wins"),
+      drawn: stat(e, "ties"),
+      lost: stat(e, "losses"),
+      gf: stat(e, "pointsFor"),
+      ga: stat(e, "pointsAgainst"),
+      points: stat(e, "points"),
+      rank: stat(e, "rank")
+    }))
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ rank, ...rest }) => rest);
+
+  const matchesPlayed = Math.round(rows.reduce((s, r) => s + r.played, 0) / 2);
+  return { rows, positions: buildPositions(rows), matchesPlayed };
 }
 
-/* ---------- Scoring ---------- */
-// 10 exact position, 7 one away, 5 two away, 1 three-or-more away
-// (still top 6), 0 if the team isn't in the real top 6 at all.
-function scorePick(predictedRank, actualPos) {
-  if (!actualPos || actualPos < 1 || actualPos > 6) return 0;
-  const diff = Math.abs(actualPos - predictedRank);
-  if (diff === 0) return 10;
-  if (diff === 1) return 7;
-  if (diff === 2) return 5;
-  return 1;
-}
-
-/* ---------- Standings computation ---------- */
-function computeStandings(matches) {
-  const table = new Map(); // shortName-agnostic key: full team name -> stats
+// openfootball's raw fixture list — compute the table ourselves.
+function parseOpenfootballMatches(data) {
+  const matches = data.matches || (data.rounds && data.rounds.flatMap(r => r.matches)) || [];
+  const table = new Map(); // full team name -> stats
 
   for (const m of matches) {
     if (!m.score || !m.score.ft) continue; // only played matches
@@ -227,6 +252,8 @@ function computeStandings(matches) {
     else { home.drawn++; away.drawn++; home.points++; away.points++; }
   }
 
+  if (!table.size) return null;
+
   const rows = Array.from(table.values());
   rows.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
@@ -236,96 +263,20 @@ function computeStandings(matches) {
     return a.name.localeCompare(b.name);
   });
 
-  const positions = new Map(); // shortName -> position (first match wins)
-  rows.forEach((row, i) => {
-    const short = toShortName(row.name);
-    if (!positions.has(short)) positions.set(short, i + 1);
-  });
-
-  return { rows, positions };
+  const matchesPlayed = matches.filter(m => m.score && m.score.ft).length;
+  return { rows, positions: buildPositions(rows), matchesPlayed };
 }
 
-// Extracts the numeric part of a round label like "Matchday 7". Returns
-// null if it can't find one (so those matches get ignored for gameweek
-// completion purposes, but still count in the live "positions" table above).
-function roundNumber(roundLabel) {
-  const m = /(\d+)/.exec(roundLabel || "");
-  return m ? parseInt(m[1], 10) : null;
-}
-
-// Finds the highest matchday number that is fully played out (every match
-// in it, and every matchday before it, has a final score). Assumes matchdays
-// are played in order, which is true for how the Premier League schedules
-// rounds. Returns null if not even matchday 1 is complete yet.
-function lastCompletedRound(matches) {
-  const byRound = new Map(); // round number -> { total, played }
-  for (const m of matches) {
-    const rn = roundNumber(m.round);
-    if (rn == null) continue;
-    if (!byRound.has(rn)) byRound.set(rn, { total: 0, played: 0 });
-    const entry = byRound.get(rn);
-    entry.total++;
-    if (m.score && m.score.ft) entry.played++;
-  }
-  const sortedRounds = Array.from(byRound.keys()).sort((a, b) => a - b);
-  let last = null;
-  for (const rn of sortedRounds) {
-    const entry = byRound.get(rn);
-    if (entry.total > 0 && entry.played === entry.total) {
-      last = rn;
-    } else {
-      break; // this round isn't finished yet, so nothing after it counts either
-    }
-  }
-  return last;
-}
-
-// Standings as they stood at the end of the last fully-completed gameweek —
-// used only for the "all 6 picks in the top 6" bonus, so a bonus can't be
-// awarded (or lost) on the back of a game week that's still mid-way through.
-function computeLockedStandings(matches) {
-  const upTo = lastCompletedRound(matches);
-  if (upTo == null) return { positions: new Map(), upToRound: null };
-  const lockedMatches = matches.filter(m => {
-    const rn = roundNumber(m.round);
-    return rn != null && rn <= upTo;
-  });
-  const { positions } = computeStandings(lockedMatches);
-  return { positions, upToRound: upTo };
-}
-
-// Standings as they stood at the end of EVERY fully-completed match week so
-// far this season, keyed by round number. Feeds the cumulative BONUS column:
-// a player's picks might have all been in the top 6 after matchday 3, fallen
-// out of it by matchday 5, then locked in again by matchday 9 — each of
-// those completed weeks needs checking independently.
-function standingsByCompletedRound(matches) {
-  const upTo = lastCompletedRound(matches);
-  const byRound = new Map(); // round number -> positions Map as of that round
-  if (upTo == null) return byRound;
-  for (let r = 1; r <= upTo; r++) {
-    const roundMatches = matches.filter(m => {
-      const rn = roundNumber(m.round);
-      return rn != null && rn <= r;
-    });
-    byRound.set(r, computeStandings(roundMatches).positions);
-  }
-  return byRound;
-}
-
-// A player earns +10 for every fully-completed match week where all 6 of
-// their picks sat in the actual top 6 at the time. Cumulative over the
-// season — this can go up multiple times, it doesn't cap at one hit.
-function cumulativeBonus(picks, roundPositionsMap) {
-  let bonus = 0;
-  for (const positions of roundPositionsMap.values()) {
-    const allInTop6 = picks.every(team => {
-      const pos = positions.get(team);
-      return pos != null && pos >= 1 && pos <= 6;
-    });
-    if (allInTop6) bonus += 10;
-  }
-  return bonus;
+/* ---------- Scoring ---------- */
+// 10 exact position, 7 one away, 5 two away, 1 three-or-more away
+// (still top 6), 0 if the team isn't in the real top 6 at all.
+function scorePick(predictedRank, actualPos) {
+  if (!actualPos || actualPos < 1 || actualPos > 6) return 0;
+  const diff = Math.abs(actualPos - predictedRank);
+  if (diff === 0) return 10;
+  if (diff === 1) return 7;
+  if (diff === 2) return 5;
+  return 1;
 }
 
 /* ---------- Fetching ---------- */
@@ -337,10 +288,14 @@ async function fetchJson(url) {
 
 async function fetchLiveData() {
   let lastErr;
-  for (const url of DATA_SOURCES) {
+  for (const src of DATA_SOURCES) {
     try {
-      const data = await fetchJson(url);
-      return { data, source: url };
+      const data = await fetchJson(src.url);
+      const parsed = src.parse(data);
+      if (parsed && parsed.rows && parsed.rows.length) {
+        return { ...parsed, source: src.label };
+      }
+      lastErr = new Error(`${src.label} returned no usable data yet`);
     } catch (err) {
       lastErr = err;
     }
@@ -353,9 +308,33 @@ function fmtTime(d) {
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-function render(predictions, positions, lockedPositions, roundPositionsMap) {
+function render(predictions, positions, standingsRows, matchesPlayed) {
   const errorBox = document.getElementById("errorBox");
   errorBox.innerHTML = "";
+
+  // Which short team names appear anywhere in the pool's predictions,
+  // so we can highlight them in the full league table.
+  const predictedTeams = new Set(Object.values(predictions.players).flat());
+
+  const tableBody = document.getElementById("leagueTableBody");
+  tableBody.innerHTML = standingsRows.map((row, i) => {
+    const short = toShortName(row.name);
+    const inPool = predictedTeams.has(short);
+    const gd = row.gf - row.ga;
+    const gdLabel = gd > 0 ? `+${gd}` : gd;
+    return `<tr class="${inPool ? "in-pool" : ""}">
+      <td>${i + 1}</td>
+      <td>${row.name}</td>
+      <td>${row.played}</td>
+      <td>${row.won}</td>
+      <td>${row.drawn}</td>
+      <td>${row.lost}</td>
+      <td>${row.gf}</td>
+      <td>${row.ga}</td>
+      <td>${gdLabel}</td>
+      <td><b>${row.points}</b></td>
+    </tr>`;
+  }).join("");
 
   const potBox = document.getElementById("potBox");
   const split = predictions.prizeSplit || { first: 120, second: 60 };
@@ -371,41 +350,22 @@ function render(predictions, positions, lockedPositions, roundPositionsMap) {
       const pts = scorePick(rank, actualPos);
       return { team, rank, actualPos, pts };
     });
-    const basePts = breakdown.reduce((s, b) => s + b.pts, 0);
-
-    // 6/6 status for the most recently completed match week (informational —
-    // shows whether this week is currently on track for a bonus hit).
-    let sixSixCount = null;
-    if (lockedPositions && lockedPositions.size > 0) {
-      sixSixCount = picks.filter(team => {
-        const pos = lockedPositions.get(team);
-        return pos != null && pos >= 1 && pos <= 6;
-      }).length;
-    }
-
-    // Cumulative bonus: +10 for every completed match week that was a 6/6.
-    const bonus = cumulativeBonus(picks, roundPositionsMap);
-
-    const total = basePts + bonus;
+    const total = breakdown.reduce((s, b) => s + b.pts, 0);
     const exact = breakdown.filter(b => b.pts === 10).length;
-    return { name, breakdown, total, exact, bonus, sixSixCount };
+    return { name, breakdown, total, exact };
   });
 
-  results.sort((a, b) => b.exact - a.exact || b.total - a.total || a.name.localeCompare(b.name));
+  results.sort((a, b) => b.total - a.total || b.exact - a.exact || a.name.localeCompare(b.name));
 
   // Leaderboard
   const lbBody = document.getElementById("leaderboardBody");
   lbBody.innerHTML = results.map((r, i) => {
     const rankClass = i === 0 ? "rank-1" : i === 1 ? "rank-2" : "";
-    const sixSixLabel = r.sixSixCount == null ? "–" : `${r.sixSixCount}`;
-    const sixSixClass = r.sixSixCount === 6 ? " six-six-hit" : "";
     return `<tr>
       <td class="rank-cell ${rankClass}">${i + 1}</td>
       <td class="${rankClass}">${r.name}</td>
       <td class="score-cell">${r.total}</td>
       <td>${r.exact}</td>
-      <td class="six-six-cell${sixSixClass}">${sixSixLabel}</td>
-      <td class="bonus-cell${r.bonus ? " bonus-cell-hit" : ""}">${r.bonus}</td>
     </tr>`;
   }).join("");
 
@@ -423,14 +383,14 @@ function render(predictions, positions, lockedPositions, roundPositionsMap) {
       </div>`;
     }).join("");
     return `<div class="card">
-      <div class="card-head"><span class="name">${r.name}</span><span class="total">${r.total} pts${r.bonus ? ` (incl. ${r.bonus} bonus)` : ""}</span></div>
+      <div class="card-head"><span class="name">${r.name}</span><span class="total">${r.total} pts</span></div>
       ${rows}
     </div>`;
   }).join("");
 
   document.getElementById("footerNote").innerHTML =
-    `Scoring: exact position 10 pts &middot; one away 7 pts &middot; two away 5 pts &middot; three-or-more away (still top 6) 1 pt &middot; 0 if outside the top 6.<br>` +
-    `+10 bonus for every match week where all 6 picks are in the top 6 &mdash; cumulative over the season, only locked in once each match week finishes (see the "# teams in current top 6" and Bonus columns).`;
+    `Scoring: 10 pts exact position &middot; 7 pts one off &middot; 5 pts two off &middot; 1 pt three-or-more off (still top 6) &middot; 0 if outside the top 6.<br>` +
+    `Standings computed from ${matchesPlayed} played match${matchesPlayed === 1 ? "" : "es"} (points, then goal difference, then goals scored — head-to-head not applied).`;
 }
 
 function ordinal(n) {
@@ -450,34 +410,12 @@ async function loadAll() {
   refreshBtn.disabled = true;
   statusEl.textContent = "Refreshing…";
   try {
-    const [[predictions, { data, source }], espnResult] = await Promise.all([
-      Promise.all([fetchJson(PREDICTIONS_URL), fetchLiveData()]),
-      fetchEspnPositions().then(
-        positions => ({ ok: true, positions }),
-        err => ({ ok: false, err })
-      )
+    const [predictions, live] = await Promise.all([
+      fetchJson(PREDICTIONS_URL),
+      fetchLiveData()
     ]);
-    const matches = data.matches || data.rounds?.flatMap(r => r.matches) || [];
-
-    // The match-week-by-match-week history (needed for the Bonus column)
-    // only comes from openfootball's raw results, since ESPN's standings
-    // endpoint only exposes the current table, not a per-matchday breakdown.
-    const { positions: openfootballPositions } = computeStandings(matches);
-    const { positions: lockedPositions } = computeLockedStandings(matches);
-    const roundPositionsMap = standingsByCompletedRound(matches);
-
-    // Live positions: prefer ESPN's pre-ranked table (see ESPN_STANDINGS_URL
-    // comment above); fall back to our own openfootball-derived ranking if
-    // ESPN is unreachable or its response shape changes.
-    let positions = openfootballPositions;
-    let positionsSource = source.includes("jsdelivr") ? "jsdelivr mirror" : "GitHub (openfootball)";
-    if (espnResult.ok) {
-      positions = espnResult.positions;
-      positionsSource = "ESPN";
-    }
-
-    render(predictions, positions, lockedPositions, roundPositionsMap);
-    statusEl.textContent = `Live · updated ${fmtTime(new Date())} · source: ${positionsSource}`;
+    render(predictions, live.positions, live.rows, live.matchesPlayed);
+    statusEl.textContent = `Live · updated ${fmtTime(new Date())} · source: ${live.source}`;
   } catch (err) {
     document.getElementById("errorBox").innerHTML =
       `<div class="error-box">Couldn't load live standings (${err.message}). Showing last known data if available. This usually means the season's data file isn't published yet or the source is briefly unreachable — try "Refresh now" again shortly.</div>`;
